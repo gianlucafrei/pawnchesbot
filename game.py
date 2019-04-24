@@ -198,57 +198,21 @@ class HumanPlayer(Player):
             print(f'{idx+1}: {move}')
 
 
-class PwnChessMinMax(minmax.MinMax):
+def precedence_heuristic(board):
 
-    def static_heuristic(self, board):
-        
-        if board.is_won() == WHITE:
-            return 100
-        
-        if board.is_won() == BLACK:
-            return -100
+    white_positions = board.get_all_pieces_position_of_color(WHITE)
+    val = 0
+    for piece in white_positions:
+        pred = piece[0]
+        val += pred*pred
+    
+    black_positions = board.get_all_pieces_position_of_color(BLACK)
+    for piece in black_positions:
+        pred = board.size - piece[0] - 1
+        val -= pred*pred
 
-        # Draw
-        if len(board.possible_moves()) == 0:
-            return 0
-        
-        val = 0
+    return val
 
-        # Number of pieces
-        white_positions = board.get_all_pieces_position_of_color(WHITE)
-        black_positions = board.get_all_pieces_position_of_color(BLACK)
-
-        val += len(white_positions)
-        val -= len(black_positions)
-
-        #point if no pawn on same column
-        for pos in white_positions:
-            pwns_in_same_col = [bpos for bpos in black_positions if bpos[1] == pos[1]]
-            if len(pwns_in_same_col) == 0:
-                row = pos[0]
-                if row == 0:
-                    val += 0.1
-                elif row == 1:
-                    val += 0.2
-                elif row == 2:
-                    val += 0.5
-                elif row == 3:
-                    val += 1.5
-
-        for pos in black_positions:
-            pwns_in_same_col = [bpos for bpos in white_positions if bpos[1] == pos[1]]
-            if len(pwns_in_same_col) == 0:
-                row = pos[0]
-                if row == 3:
-                    val += 0.1
-                elif row == 2:
-                    val += 0.2
-                elif row == 1:
-                    val += 0.5
-                elif row == 0:
-                    val += 1.5
-        
-        return val
 class PwnChessAlphaBeta(alphabeta.AlphaBeta):
 
     def static_heuristic(self, board):
@@ -263,42 +227,7 @@ class PwnChessAlphaBeta(alphabeta.AlphaBeta):
         if len(board.possible_moves()) == 0:
             return 0
         
-        val = 0
-
-        # Number of pieces
-        white_positions = board.get_all_pieces_position_of_color(WHITE)
-        black_positions = board.get_all_pieces_position_of_color(BLACK)
-
-        val += len(white_positions)
-        val -= len(black_positions)
-
-        #point if no pawn on same column
-        for pos in white_positions:
-            pwns_in_same_col = [bpos for bpos in black_positions if bpos[1] == pos[1]]
-            if len(pwns_in_same_col) == 0:
-                row = pos[0]
-                if row == 0:
-                    val += 0.1
-                elif row == 1:
-                    val += 0.2
-                elif row == 2:
-                    val += 0.5
-                elif row == 3:
-                    val += 1.5
-
-        for pos in black_positions:
-            pwns_in_same_col = [bpos for bpos in white_positions if bpos[1] == pos[1]]
-            if len(pwns_in_same_col) == 0:
-                row = pos[0]
-                if row == 3:
-                    val += 0.1
-                elif row == 2:
-                    val += 0.2
-                elif row == 1:
-                    val += 0.5
-                elif row == 0:
-                    val += 1.5
-        
+        val = precedence_heuristic(board)
         return val
 
 class AlphaBetaPlayer(Player):
@@ -317,7 +246,7 @@ class AlphaBetaPlayer(Player):
             for mv in possible_moves:
                 next_board = board.move(mv)
                 mv_val = self.ab.alphabeta_value(next_board, True)
-                if mv_val > best_val:
+                if mv_val < best_val:
                     best_move = mv
                     best_val = mv_val
 
@@ -327,8 +256,8 @@ class AlphaBetaPlayer(Player):
             
             for mv in possible_moves:
                 next_board = board.move(mv)
-                mv_val = self.ab.alphabeta_value(next_board, True)
-                if mv_val < best_val:
+                mv_val = self.ab.alphabeta_value(next_board, False)
+                if mv_val > best_val:
                     best_move = mv
                     best_val = mv_val
         
@@ -338,7 +267,6 @@ class AlphaBetaPlayer(Player):
 class ComputerAssistedPlayer(HumanPlayer):
 
     ab = PwnChessAlphaBeta(4)
-    mm = PwnChessMinMax(4)
 
     def print_possible_moves(self, board, movesToChoose):
 
@@ -360,40 +288,6 @@ class ComputerAssistedPlayer(HumanPlayer):
                 diff = next_val - current_val
 
             print(f'{idx+1}: {move} {diff}')
-
-class MinMaxPlayer(Player):
-
-    mm = PwnChessMinMax(5)
-
-    def select_move(self, board):
-
-        possible_moves = board.possible_moves()
-        best_move = possible_moves[0]
-
-        if self.color == BLACK:
-
-            best_val = float('inf')
-
-            for mv in possible_moves:
-                next_board = board.move(mv)
-                mv_val = self.mm.minmax_value(next_board, True)
-                if mv_val > best_val:
-                    best_move = mv
-                    best_val = mv_val
-
-        if self.color == WHITE:
-            best_val = float('-inf')
-            best_move = possible_moves[0]
-            
-            for mv in possible_moves:
-                next_board = board.move(mv)
-                mv_val = self.mm.minmax_value(next_board, True)
-                if mv_val < best_val:
-                    best_move = mv
-                    best_val = mv_val
-        
-        print(f"Computer chooses {best_move}")
-        return best_move
 
 class BoardPrinter():
 
@@ -436,9 +330,6 @@ class BoardPrinter():
             print('----', end='')
         print('')
 
-mm = PwnChessMinMax(4)
-ab = PwnChessAlphaBeta(4)
-
 class Game():
     
     printer = BoardPrinter()
@@ -452,10 +343,8 @@ class Game():
 
         self.printer.print_board(self.board)
 
-        val = mm.minmax_value(self.board, True) 
-        print(f"Minmax: {val}")
-        val = ab.alphabeta_value(self.board, False)
-        print(f"AlphaBeta: {val}")
+        pred = precedence_heuristic(self.board)
+        print(f"precedence: {pred}")
 
         while True:
             
@@ -465,10 +354,8 @@ class Game():
 
             self.printer.print_board(self.board)
 
-            val = mm.minmax_value(self.board, False)
-            print(f"Minmax: {val}")
-            val = ab.alphabeta_value(self.board, False)
-            print(f"AlphaBeta: {val}")
+            pred = precedence_heuristic(self.board)
+            print(f"precedence: {pred}")
 
             if(self.board.is_won()):
                 print("*** WHITE HAS WON ***")
@@ -484,10 +371,8 @@ class Game():
             
             self.printer.print_board(self.board)
 
-            val = mm.minmax_value(self.board, True)
-            print(f"Minmax: {val}")
-            val = ab.alphabeta_value(self.board, True)
-            print(f"AlphaBeta: {val}")
+            pred = precedence_heuristic(self.board)
+            print(f"precedence: {pred}")
 
             if(self.board.is_won()):
                 print("*** BLACK HAS WON ***")
@@ -497,11 +382,31 @@ class Game():
                 print("*** THIS IS A DRAW ***")
                 break
 
+def debug():
+
+    printer = BoardPrinter()
+
+    rows = [[None, None, None, None],
+            [BLACK, WHITE, WHITE, WHITE],
+            [None, WHITE, BLACK, BLACK],
+            [None, None, None, None]]
+    
+    board = Board(4)
+    board.rows = rows
+    board.next_move = WHITE
+
+    printer.print_board(board)
+
+    player = AlphaBetaPlayer(WHITE)
+    player.select_move(board)
+
 if __name__ == "__main__":
     
-    player1 = ComputerAssistedPlayer(WHITE)
+    #debug()
+
+    player1 = AlphaBetaPlayer(WHITE)
     #player2 = MinMaxPlayer(BLACK)
-    player2 = AlphaBetaPlayer(BLACK)
+    player2 = HumanPlayer(BLACK)
     game = Game(player1, player2, 4)
     game.start()
     
