@@ -1,5 +1,6 @@
 import copy
 import minmax
+import alphabeta
 
 WHITE = 'w'
 BLACK = 'b'
@@ -248,20 +249,108 @@ class PwnChessMinMax(minmax.MinMax):
                     val += 1.5
         
         return val
+class PwnChessAlphaBeta(alphabeta.AlphaBeta):
+
+    def static_heuristic(self, board):
+        
+        if board.is_won() == WHITE:
+            return 100
+        
+        if board.is_won() == BLACK:
+            return -100
+
+        # Draw
+        if len(board.possible_moves()) == 0:
+            return 0
+        
+        val = 0
+
+        # Number of pieces
+        white_positions = board.get_all_pieces_position_of_color(WHITE)
+        black_positions = board.get_all_pieces_position_of_color(BLACK)
+
+        val += len(white_positions)
+        val -= len(black_positions)
+
+        #point if no pawn on same column
+        for pos in white_positions:
+            pwns_in_same_col = [bpos for bpos in black_positions if bpos[1] == pos[1]]
+            if len(pwns_in_same_col) == 0:
+                row = pos[0]
+                if row == 0:
+                    val += 0.1
+                elif row == 1:
+                    val += 0.2
+                elif row == 2:
+                    val += 0.5
+                elif row == 3:
+                    val += 1.5
+
+        for pos in black_positions:
+            pwns_in_same_col = [bpos for bpos in white_positions if bpos[1] == pos[1]]
+            if len(pwns_in_same_col) == 0:
+                row = pos[0]
+                if row == 3:
+                    val += 0.1
+                elif row == 2:
+                    val += 0.2
+                elif row == 1:
+                    val += 0.5
+                elif row == 0:
+                    val += 1.5
+        
+        return val
+
+class AlphaBetaPlayer(Player):
+
+    ab = PwnChessAlphaBeta(5)
+
+    def select_move(self, board):
+
+        possible_moves = board.possible_moves()
+        best_move = possible_moves[0]
+
+        if self.color == BLACK:
+
+            best_val = float('inf')
+
+            for mv in possible_moves:
+                next_board = board.move(mv)
+                mv_val = self.ab.alphabeta_value(next_board, True)
+                if mv_val > best_val:
+                    best_move = mv
+                    best_val = mv_val
+
+        if self.color == WHITE:
+            best_val = float('-inf')
+            best_move = possible_moves[0]
+            
+            for mv in possible_moves:
+                next_board = board.move(mv)
+                mv_val = self.ab.alphabeta_value(next_board, True)
+                if mv_val < best_val:
+                    best_move = mv
+                    best_val = mv_val
+        
+        print(f"Computer chooses {best_move}")
+        return best_move
 
 class ComputerAssistedPlayer(HumanPlayer):
 
+    ab = PwnChessAlphaBeta(4)
     mm = PwnChessMinMax(4)
 
     def print_possible_moves(self, board, movesToChoose):
 
-        current_val = self.mm.minmax_value(board, self.color == WHITE)
+        #current_val = self.mm.minmax_value(board, self.color == WHITE)
+        current_val = self.ab.alphabeta_value(board, self.color == WHITE)
 
         print("Possible Moves")
         for idx, move in enumerate(movesToChoose):
 
             next_board = board.move(move)
-            next_val = self.mm.minmax_value(next_board, self.color == BLACK)
+            #next_val = self.mm.minmax_value(next_board, self.color == BLACK)
+            next_val = self.ab.alphabeta_value(next_board, self.color == BLACK)
 
             if next_val == float('-inf'):
                 diff = "Mate for black"
@@ -401,11 +490,11 @@ class Game():
                 print("*** THIS IS A DRAW ***")
                 break
 
-
 if __name__ == "__main__":
     
     player1 = ComputerAssistedPlayer(WHITE)
-    player2 = MinMaxPlayer(BLACK)
+    #player2 = MinMaxPlayer(BLACK)
+    player2 = AlphaBetaPlayer(BLACK)
     game = Game(player1, player2, 4)
     game.start()
     
