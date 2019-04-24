@@ -437,6 +437,7 @@ class BoardPrinter():
         print('')
 
 mm = PwnChessMinMax(4)
+ab = PwnChessAlphaBeta(4)
 
 class Game():
     
@@ -451,8 +452,10 @@ class Game():
 
         self.printer.print_board(self.board)
 
-        val = mm.minmax_value(self.board, True)
+        val = mm.minmax_value(self.board, True) 
         print(f"Minmax: {val}")
+        val = ab.alphabeta_value(self.board, False)
+        print(f"AlphaBeta: {val}")
 
         while True:
             
@@ -464,6 +467,8 @@ class Game():
 
             val = mm.minmax_value(self.board, False)
             print(f"Minmax: {val}")
+            val = ab.alphabeta_value(self.board, False)
+            print(f"AlphaBeta: {val}")
 
             if(self.board.is_won()):
                 print("*** WHITE HAS WON ***")
@@ -481,6 +486,8 @@ class Game():
 
             val = mm.minmax_value(self.board, True)
             print(f"Minmax: {val}")
+            val = ab.alphabeta_value(self.board, True)
+            print(f"AlphaBeta: {val}")
 
             if(self.board.is_won()):
                 print("*** BLACK HAS WON ***")
