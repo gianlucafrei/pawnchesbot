@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import copy
 import minmax
 import alphabeta
@@ -20,7 +23,7 @@ class Move():
         toR = self.toField[0] + 1
         toC = chr(self.toField[1] + ordA)
 
-        return f'{fromR}{fromC}->{toR}{toC}'
+        return f"{fromR}{fromC}->{toR}{toC}"
 
 class GameBoard():
 
@@ -177,6 +180,9 @@ class Player():
 
 class HumanPlayer(Player):
     def select_move(self, board):
+
+        print("Select your move " + ("white" if self.color==WHITE else "black"))
+
         movesToChoose = board.possible_moves()
         
         self.print_possible_moves(board, movesToChoose)
@@ -344,18 +350,18 @@ class Game():
         self.printer.print_board(self.board)
 
         pred = precedence_heuristic(self.board)
-        print(f"precedence: {pred}")
+        print(f"heuristics for this board: {pred}")
 
         while True:
             
-            print("Select your move white")
             white_move = self.player1.select_move(self.board)
             self.board = self.board.move(white_move)
 
             self.printer.print_board(self.board)
 
             pred = precedence_heuristic(self.board)
-            print(f"precedence: {pred}")
+            print(f"heuristics for this board: {pred}")
+            print("")
 
             if(self.board.is_won()):
                 print("*** WHITE HAS WON ***")
@@ -365,14 +371,14 @@ class Game():
                 print("*** THIS IS A DRAW ***")
                 break
 
-            print("Select your move black")
             white_move = self.player2.select_move(self.board)
             self.board = self.board.move(white_move)
             
             self.printer.print_board(self.board)
 
             pred = precedence_heuristic(self.board)
-            print(f"precedence: {pred}")
+            print(f"heuristics for this board: {pred}")
+            print("")
 
             if(self.board.is_won()):
                 print("*** BLACK HAS WON ***")
@@ -383,7 +389,9 @@ class Game():
                 break
 
 def debug():
-
+    """
+    This is only used for debugging
+    """
     printer = BoardPrinter()
 
     rows = [[None, None, None, None],
@@ -404,10 +412,41 @@ if __name__ == "__main__":
     
     #debug()
 
-    player1 = AlphaBetaPlayer(WHITE)
-    #player2 = MinMaxPlayer(BLACK)
-    player2 = HumanPlayer(BLACK)
-    game = Game(player1, player2, 4)
+    print("Select a mode:")
+    print("1: human    vs. computer")
+    print("2: computer vs. human")
+    print("3: computer vs. computer")
+    print("4: human    vs. human")
+
+
+    while True:
+        inp = input("Enter your choice (1-4): ")
+        if inp == 'q':
+            exit()
+        try:
+            nr = int(inp)
+            if 1 <= nr <= 4:
+                break
+        except:
+            print("Please enter a valid move.")    
+
+
+    if nr==1:
+        player1 = HumanPlayer(WHITE)
+        player2 = AlphaBetaPlayer(BLACK)
+
+    if nr==2:
+        player1 = AlphaBetaPlayer(WHITE)
+        player2 = HumanPlayer(BLACK)
+
+    if nr==3:
+        player1 = AlphaBetaPlayer(WHITE)
+        player2 = AlphaBetaPlayer(BLACK)
+
+    if nr==4:
+        player1 = HumanPlayer(WHITE)
+        player2 = HumanPlayer(BLACK)
+
+
+    game = Game(player1, player2, 5)
     game.start()
-    
-    
